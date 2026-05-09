@@ -1,31 +1,34 @@
 import torch.nn as nn
 
 class MLP(nn.Module):
-	"""
-	Multi-Layer Perceptron configurabile.
-	I layer e le attivazioni sono definiti come attributi espliciti per 
-	facilitare l'estrazione delle feature (es. tramite Hook per il GDV).
-	"""
-	def __init__(self, input_size=16, hidden1=128, hidden2=64, num_classes=26, dropout_rate=0.0):
-		super(MLP, self).__init__()
-		
-		# Primo blocco
-		self.fc1 = nn.Linear(input_size, hidden1)
-		self.relu1 = nn.ReLU()
-		# nn.Identity() è un trucco elegante di PyTorch: se dropout_rate è 0, 
-		# i dati passano attraverso questo layer senza subire alcuna modifica.
-		self.drop1 = nn.Dropout(dropout_rate) if dropout_rate > 0 else nn.Identity()
-		
-		# Secondo blocco (Ottimo candidato per l'estrazione del GDV)
-		self.fc2 = nn.Linear(hidden1, hidden2)
-		self.relu2 = nn.ReLU()
-		self.drop2 = nn.Dropout(dropout_rate) if dropout_rate > 0 else nn.Identity()
-		
-		# Classificatore finale
-		self.fc3 = nn.Linear(hidden2, num_classes)
-		
-	def forward(self, x):
-		x = self.drop1(self.relu1(self.fc1(x)))
-		x = self.drop2(self.relu2(self.fc2(x)))
-		x = self.fc3(x)
-		return x
+    def __init__(self, input_size, num_classes, hidden_layers=[128, 64], dropout_rate=0.0):
+        super(MLP, self).__init__()
+        
+        self.layers = nn.ModuleList()
+        self.activations = nn.ModuleList()
+        self.dropouts = nn.ModuleList()
+        
+        in_features = input_size
+        
+        # Costruisce la rete in base alla lista in config.yaml
+        for hidden_dim in hidden_layers:
+            self.layers.append(nn.Linear(in_features, hidden_dim))
+            self.activations.append(nn.ReLU())
+            self.dropouts.append(nn.Dropout(dropout_rate) if dropout_rate > 0 else nn.Identity())
+            in_features = hidden_dim
+            
+        # Classificatore finale
+        self.classifier = nn.Linear(in_features, num_classes)
+        
+    def forward(self, x):
+        for layer, act, drop in zip(self.layers, self.activations, self.dropouts):
+            x = drop(act(layer(x)))
+        x = self.classifier(x)
+        return x
+
+    def get_layer_for_gdv(self, index=-1):
+        """
+        Restituisce lo strato di attivazione (ReLU) specificato per estrarre il GDV.
+        Di default (index=-1) restituisce l'attivazione dell'ultimo strato nascosto.
+        """
+        return self.activations[index]

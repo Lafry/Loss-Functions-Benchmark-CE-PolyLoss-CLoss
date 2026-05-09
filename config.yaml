@@ -1,0 +1,21 @@
+# Configurazione per l'addestramento del modello su un dataset UCI
+# Esegui la cella 2 del notebook per caricare le modifiche del file di configurazione ogni volta che salvi questo file.
+
+dataset:
+  uci_id: 59
+  batch_size: 64
+  random_state: 42
+
+model:
+  hidden_layers: "auto" # Usa la funzione di calcolo automatico dei layer
+  dropout_rate: 0.0
+  gdv_layer_index: -1
+
+training:
+  epochs: 500
+  learning_rate: 0.001
+  device: "cuda"
+
+kfold:
+  k_splits: 10            # Valore di K
+  epochs: 200              # Epoche specifiche per ogni fold

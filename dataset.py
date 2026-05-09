@@ -61,3 +61,36 @@ def get_holdout_dataloaders(X, y, batch_size=64, random_state=42):
 	test_loader = create_dataloader(X_test_scaled, y_test, batch_size, shuffle=False)
 
 	return train_loader, val_loader, test_loader
+
+def load_uci_dataset(dataset_id: int):
+    """
+    Scarica il dataset in base all'ID UCI fornito.
+    """
+    print(f"Scaricamento del dataset UCI ID {dataset_id}...")
+    dataset = fetch_ucirepo(id=dataset_id) 
+    X = dataset.data.features.values
+    y = dataset.data.targets.values.ravel()
+    return X, y
+
+def prepare_data_from_config(config: dict):
+    """
+    Orchestra il caricamento, l'encoding e la creazione dei DataLoader
+    leggendo i parametri dal dizionario di configurazione.
+    """
+    # 1. Carica i dati
+    X, y = load_uci_dataset(config['dataset']['uci_id'])
+    
+    # 2. Codifica le etichette
+    y_encoded, num_classes = encode_labels(y)
+    
+    # 3. Determina la dimensione di input (numero di features)
+    input_size = X.shape[1]
+    
+    # 4. Crea i DataLoader
+    train_loader, val_loader, test_loader = get_holdout_dataloaders(
+        X, y_encoded, 
+        batch_size=config['dataset']['batch_size'],
+        random_state=config['dataset']['random_state']
+    )
+    
+    return train_loader, val_loader, test_loader, input_size, num_classes
