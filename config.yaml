@@ -2,7 +2,7 @@
 # Esegui la cella 2 del notebook per caricare le modifiche del file di configurazione ogni volta che salvi questo file.
 
 dataset:
-  uci_id: 59
+  uci_id: 365
   batch_size: 64
   random_state: 42
 
@@ -19,3 +19,11 @@ training:
 kfold:
   k_splits: 10            # Valore di K
   epochs: 200              # Epoche specifiche per ogni fold
+
+loss_params:
+  polyloss:
+    epsilon: 2.0
+  closs:
+    sigma: 0.5
+    gamma: 0.5
+

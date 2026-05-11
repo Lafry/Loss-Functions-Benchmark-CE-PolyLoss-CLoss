@@ -63,7 +63,7 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, device, n
 		history['val_loss'].append(val_loss)
 		history['val_acc'].append(accuracy)
 
-		# Early Stopping / Salvataggio Modello Migliore
+		# Salvataggio Modello Migliore
 		if val_loss < best_val_loss:
 			best_val_loss = val_loss
 			best_model_wts = copy.deepcopy(model.state_dict())

@@ -3,26 +3,26 @@ import os
 from datetime import datetime
 import yaml
 
-def salva_storico_json(history: dict, nome_esperimento: str, directory: str = "logs"):
-	"""
-	Salva il dizionario dello storico in JSON aggiungendo data e ora al nome del file.
-	Esempio: logs/2026-05-04_14-30-00-holdout_cross_entropy.json
-	"""
-	# Crea la cartella se non esiste
-	os.makedirs(directory, exist_ok=True)
-	
-	# Genera il timestamp attuale (Anno-Mese-Giorno_Ora-Minuto-Secondo)
-	timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-	
-	# Costruisci il nome del file finale
-	nome_file = f"{timestamp}-{nome_esperimento}.json"
-	filepath = os.path.join(directory, nome_file)
-	
-	with open(filepath, 'w') as f:
-		json.dump(history, f, indent=4)
-		
-	print(f"[*] Storico salvato in: {filepath}")
-	return filepath # Restituisce il percorso per poterlo stampare o riutilizzare
+def salva_storico_json(history: dict, nome_esperimento: str, dataset_id: int, base_dir: str = "results"):
+    """
+    Salva lo storico in JSON nella struttura: results/<dataset_id>/logs/
+    """
+    # 1. Costruisci il percorso: results/365/logs
+    percorso_cartella = os.path.join(base_dir, str(dataset_id), "logs")
+    
+    # 2. Crea la struttura ricorsivamente (crea results, poi l'id, poi logs)
+    os.makedirs(percorso_cartella, exist_ok=True)
+    
+    # 3. Genera timestamp e nome file
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    nome_file = f"{timestamp}-{nome_esperimento}.json"
+    filepath = os.path.join(percorso_cartella, nome_file)
+    
+    with open(filepath, 'w') as f:
+        json.dump(history, f, indent=4)
+        
+    print(f"[*] Storico salvato in: {filepath}")
+    return filepath
 
 def carica_storico_json(filepath: str) -> dict:
 	"""

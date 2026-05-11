@@ -27,7 +27,7 @@ def calculate_gdv(X: torch.Tensor, y: torch.Tensor) -> float:
         N_l = S_c.size(0)
         
         if N_l > 1:
-            # Calcoliamo la matrice di distanza solo per questo sottoinsieme (Molto più piccolo!)
+            # Calcoliamo la matrice di distanza solo per questo sottoinsieme
             class_dists = torch.cdist(S_c, S_c, p=2.0)
             sum_dists = class_dists.sum() / 2.0
             mean_intra += (2.0 / (N_l * (N_l - 1))) * sum_dists
