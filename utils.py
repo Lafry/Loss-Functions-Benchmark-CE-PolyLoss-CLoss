@@ -7,7 +7,7 @@ def salva_storico_json(history: dict, nome_esperimento: str, dataset_id: int, ba
     """
     Salva lo storico in JSON nella struttura: results/<dataset_id>/logs/
     """
-    # 1. Costruisci il percorso: results/365/logs
+    # 1. Costruisci il percorso: results/{dataset_id}/logs
     percorso_cartella = os.path.join(base_dir, str(dataset_id), "logs")
     
     # 2. Crea la struttura ricorsivamente (crea results, poi l'id, poi logs)
@@ -45,27 +45,29 @@ def carica_configurazione(filepath: str = "config.yaml") -> dict:
     print(f"[*] Configurazione caricata da: {filepath}")
     return config
 
-def get_auto_hidden_layers(in_dim: int, n_classes: int) -> list:
+def get_auto_hidden_layers(in_dim: int, n_classes: int, num_samples: int = 10000) -> list:
     """
-    Calcola dinamicamente un'architettura ottimale a 2 strati nascosti (Imbuto).
-    Regola empirica: 
-    - Layer 1 espande le feature in ingresso (per trovare combinazioni non lineari).
-    - Layer 2 comprime a metà per preparare la rete alla classificazione finale.
+    Calcola dinamicamente l'architettura basandosi su Feature e Dimensione del Dataset.
     """
-    # Definiamo dei limiti di sicurezza per evitare di esplodere la RAM 
-    # o fare reti troppo stupide
-    MIN_NEURONS_L1 = 128
     MAX_NEURONS = 1024
     
-    # Layer 1: Moltiplica l'input per 4, ma resta tra 128 e 1024
-    # (Se in_dim=16 -> max(128, 64) -> 128)
-    # (Se in_dim=64 -> max(128, 256) -> 256) 
-    h1 = min(MAX_NEURONS, max(MIN_NEURONS_L1, in_dim * 4))
+    # --- LIVELLO 1: EMERGENZA POCHI DATI (Es. Dataset 14) ---
+    # Se abbiamo meno di 400 righe totali, forziamo una rete piccolissima 
+    # a prescindere da quante colonne ci siano, per impedire la memorizzazione.
+    if num_samples < 400:
+        # Non superiamo mai i 64 neuroni nel primo strato
+        h1 = min(64, in_dim * 2) 
+        h2 = max(8, h1 // 2)
+        
+    # --- LIVELLO 2: MICRO-DATASET CLINICI (Es. Dataset 451) ---
+    elif in_dim < 20:
+        h1 = in_dim * 4
+        h2 = h1 // 2
+        
+    # --- LIVELLO 3: DATASET NORMALI/GRANDI (Es. Dataset 222) ---
+    else:
+        MIN_NEURONS_L1 = 128
+        h1 = min(MAX_NEURONS, max(MIN_NEURONS_L1, in_dim * 4))
+        h2 = max(64, h1 // 2)
     
-    # Layer 2: Metà del primo layer
-    # (Se h1=128 -> 64)
-    # (Se h1=256 -> 128)
-    h2 = max(64, h1 // 2)
-    
-    architettura = [h1, h2]
-    return architettura
+    return [int(h1), int(h2)]
