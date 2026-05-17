@@ -47,27 +47,32 @@ def carica_configurazione(filepath: str = "config.yaml") -> dict:
 
 def get_auto_hidden_layers(in_dim: int, n_classes: int, num_samples: int = 10000) -> list:
     """
-    Calcola dinamicamente l'architettura basandosi su Feature e Dimensione del Dataset.
+    Calcola dinamicamente l'architettura basandosi su Feature, Classi e Dimensione del Dataset.
+    L'euristica bilancia l'espansione geometrica con la prevenzione dell'overfitting.
     """
     MAX_NEURONS = 1024
     
-    # --- LIVELLO 1: EMERGENZA POCHI DATI (Es. Dataset 14) ---
-    # Se abbiamo meno di 400 righe totali, forziamo una rete piccolissima 
-    # a prescindere da quante colonne ci siano, per impedire la memorizzazione.
+    # 1. Regola Base di Espansione (Capacità di rappresentazione)
+    # Partiamo espandendo lo spazio di input per mappare le non-linearità
+    h1 = in_dim * 4
+    
+    # 2. Regola del Collo di Bottiglia (Sicurezza Output)
+    # Il primo strato non dovrebbe mai essere inferiore al doppio delle classi
+    h1 = max(h1, n_classes * 2)
+    
+    # 3. Regola Anti-Memorizzazione (Capacità vs Dati)
+    # Se abbiamo pochi campioni, "castriamo" la rete per forzare la generalizzazione
     if num_samples < 400:
-        # Non superiamo mai i 64 neuroni nel primo strato
-        h1 = min(64, in_dim * 2) 
-        h2 = max(8, h1 // 2)
+        h1 = min(64, h1)
+    elif num_samples < 1500:
+        h1 = min(128, h1)
         
-    # --- LIVELLO 2: MICRO-DATASET CLINICI (Es. Dataset 451) ---
-    elif in_dim < 20:
-        h1 = in_dim * 4
-        h2 = h1 // 2
-        
-    # --- LIVELLO 3: DATASET NORMALI/GRANDI (Es. Dataset 222) ---
-    else:
-        MIN_NEURONS_L1 = 128
-        h1 = min(MAX_NEURONS, max(MIN_NEURONS_L1, in_dim * 4))
-        h2 = max(64, h1 // 2)
+    # 4. Fase di Distillazione (Compressione progressiva)
+    # h2 comprime l'informazione, ma deve sempre essere >= n_classes
+    h2 = max(n_classes, h1 // 2)
+    
+    # 5. Tetti Massimi di Sicurezza (Evitare colli di bottiglia computazionali)
+    h1 = min(MAX_NEURONS, h1)
+    h2 = min(MAX_NEURONS // 2, h2)
     
     return [int(h1), int(h2)]
