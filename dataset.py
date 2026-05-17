@@ -70,7 +70,7 @@ def get_preprocessor(X):
     per preservare le proprietà geometriche dello spazio latente (GDV).
     """
     # 1. Trova in automatico quali colonne sono numeri e quali sono testo (incluso 'string')
-    numeric_features = X.select_dtypes(include=['int64', 'float64']).columns
+    numeric_features = X.select_dtypes(include=[np.number]).columns
     categorical_features = X.select_dtypes(include=['object', 'category', 'string']).columns
 
     # 2. Pipeline per i NUMERI (Riempe i buchi con la media e scala)
