@@ -34,6 +34,7 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, device, n
 
         # --- FASE DI TRAIN ---
         model.train()
+        attivazioni_layer.clear()
         running_loss = 0.0
         for inputs, targets in train_loader:
             inputs, targets = inputs.to(device), targets.to(device)

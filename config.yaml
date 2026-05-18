@@ -2,7 +2,7 @@
 # Esegui la cella 2 del notebook per caricare le modifiche del file di configurazione ogni volta che salvi questo file.
 
 dataset:
-  uci_id: 365
+  uci_id: 110
   batch_size: 64
   random_state: 42
 
@@ -25,5 +25,3 @@ loss_params:
     epsilon: 2.0
   closs:
     sigma: 0.5
-    gamma: 0.5
-

@@ -29,7 +29,12 @@ def load_uci_dataset(dataset_id: int):
     if not isinstance(y, (pd.DataFrame, pd.Series)):
         y = pd.Series(y.ravel() if hasattr(y, 'ravel') else y)
     if isinstance(y, pd.DataFrame) and y.shape[1] > 1:
-        y = y.iloc[:, 0] # Sicurezza Multi-Target
+        vals = set(y.values.ravel()) - {np.nan}
+        is_binary_exclusive = vals.issubset({0, 1, 0.0, 1.0}) and (y.sum(axis=1) == 1).all()
+        if is_binary_exclusive:
+            y = pd.Series(y.values.argmax(axis=1), name="target")  # 7 classi per Steel Plates
+        else:
+            y = y.iloc[:, 0]  # Fallback: Drug Consumption → Alcohol
 
     # --- SALVAGUARDIA NAN TARGET ---
     # Elimina le righe dove il target è nullo prima di passare i dati al loop principale
