@@ -5,7 +5,7 @@ dataset:
   uci_id: 110
   batch_size: 64
   random_state: 42
-  target_column: null   # "Cannabis" per id 373, null per tutti gli altri dataset
+  target_column: null   # "cannabis" per id 373, null per tutti gli altri dataset
 
 model:
   hidden_layers: "auto" # Usa la funzione di calcolo automatico dei layer
