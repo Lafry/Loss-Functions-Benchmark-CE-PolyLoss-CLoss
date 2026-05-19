@@ -45,6 +45,10 @@ def load_uci_dataset(dataset_id: int, target_column: str = None):
 
     # --- SALVAGUARDIA NAN TARGET ---
     # Elimina le righe dove il target è nullo prima di passare i dati al loop principale
+    X = X.reset_index(drop=True)
+    if isinstance(y, (pd.DataFrame, pd.Series)):
+        y = y.reset_index(drop=True)
+
     valid_idx = y.dropna().index
     X = X.loc[valid_idx].reset_index(drop=True)
     y = y.loc[valid_idx].reset_index(drop=True).values.ravel()
