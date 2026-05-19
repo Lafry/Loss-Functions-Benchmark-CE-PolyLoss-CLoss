@@ -5,6 +5,7 @@ def calculate_gdv(X: torch.Tensor, y: torch.Tensor) -> float:
     Calcola l'indice GDV (Class Separability) date le attivazioni X e le etichette y.
     Versione OTTIMIZZATA PER LA MEMORIA: calcola le distanze on-the-fly per 
     evitare l'esplosione della RAM (Out Of Memory) su dataset di grandi dimensioni.
+    Device-agnostic: funziona correttamente sia su CPU che su GPU.
     """
     X = X.float()
     N, D = X.shape
@@ -24,7 +25,7 @@ def calculate_gdv(X: torch.Tensor, y: torch.Tensor) -> float:
     num_classi_effettive = 0
     for c in classes:
         idx = (y == c)
-        S_c = S[idx] # Estraiamo solo i punti di questa classe
+        S_c = S[idx]
         N_l = S_c.size(0)
 
         if N_l > 1:
@@ -57,5 +58,5 @@ def calculate_gdv(X: torch.Tensor, y: torch.Tensor) -> float:
     mean_inter = mean_inter_sum / max(1, num_pairs_effettivi)
     
     # Formula finale GDV
-    gdv = (1.0 / torch.sqrt(torch.tensor(D, dtype=torch.float32))) * (mean_intra - mean_inter)
+    gdv = (1.0 / torch.sqrt(torch.tensor(D, dtype=torch.float32, device=X.device))) * (mean_intra - mean_inter)
     return gdv.item()

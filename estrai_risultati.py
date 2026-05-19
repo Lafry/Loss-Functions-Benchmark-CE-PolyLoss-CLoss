@@ -20,7 +20,9 @@ def estrai_riepilogo_esperimenti(base_dir="results"):
                 dati = json.load(f)
             
             nome_file = os.path.basename(filepath)
-            dataset_id = filepath.split(os.sep)[1] # Estrae l'ID dalla struttura cartelle
+
+            parti_relative = os.path.relpath(filepath, base_dir).split(os.sep)
+            dataset_id = parti_relative[0]  # es: "110", "198", "59", ...
             
             # --- GESTIONE LOG K-FOLD ---
             if "KFold_Results" in nome_file or "folds" in dati:

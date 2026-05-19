@@ -1,7 +1,32 @@
 import json
 import os
+import numpy as np
 from datetime import datetime
 import yaml
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """
+    Encoder JSON personalizzato che converte i tipi NumPy in tipi Python nativi.
+    
+    Problema: json.dump() non sa gestire numpy.float32, numpy.int64, ecc.
+    Questi tipi emergono naturalmente da calcoli PyTorch/NumPy (es: loss.item()
+    restituisce float Python, ma val_gdv da gdv_utils.calculate_gdv() potrebbe
+    restituire float32 a seconda del contesto).
+    
+    Soluzione: sovrascriviamo il metodo default() dell'encoder, che viene chiamato
+    automaticamente ogni volta che json incontra un tipo che non sa serializzare.
+    """
+    def default(self, obj):
+        if isinstance(obj, np.integer):   # np.int8, int16, int32, int64, ...
+            return int(obj)
+        if isinstance(obj, np.floating):  # np.float16, float32, float64, ...
+            return float(obj)
+        if isinstance(obj, np.ndarray):   # Array NumPy → lista Python
+            return obj.tolist()
+        # Per qualsiasi altro tipo non gestito, lascia fare al padre (che lancerà TypeError)
+        return super().default(obj)
+
 
 def salva_storico_json(history: dict, nome_esperimento: str, dataset_id: int, base_dir: str = "results"):
     """
@@ -18,23 +43,26 @@ def salva_storico_json(history: dict, nome_esperimento: str, dataset_id: int, ba
     nome_file = f"{timestamp}-{nome_esperimento}.json"
     filepath = os.path.join(percorso_cartella, nome_file)
     
+    # 4. Salva usando NumpyEncoder per gestire tipi numpy nel dizionario history
     with open(filepath, 'w') as f:
-        json.dump(history, f, indent=4)
+        json.dump(history, f, indent=4, cls=NumpyEncoder)
         
     print(f"[*] Storico salvato in: {filepath}")
     return filepath
 
+
 def carica_storico_json(filepath: str) -> dict:
-	"""
-	Carica uno storico di addestramento da un file JSON.
-	"""
-	if not os.path.exists(filepath):
-		raise FileNotFoundError(f"Il file {filepath} non esiste.")
-		
-	with open(filepath, 'r') as f:
-		history = json.load(f)
-	print(f"[*] Storico caricato da: {filepath}")
-	return history
+    """
+    Carica uno storico di addestramento da un file JSON.
+    """
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"Il file {filepath} non esiste.")
+        
+    with open(filepath, 'r') as f:
+        history = json.load(f)
+    print(f"[*] Storico caricato da: {filepath}")
+    return history
+
 
 def carica_configurazione(filepath: str = "config.yaml") -> dict:
     """
@@ -44,6 +72,7 @@ def carica_configurazione(filepath: str = "config.yaml") -> dict:
         config = yaml.safe_load(f)
     print(f"[*] Configurazione caricata da: {filepath}")
     return config
+
 
 def get_auto_hidden_layers(in_dim: int, n_classes: int, num_samples: int = 10000) -> list:
     """

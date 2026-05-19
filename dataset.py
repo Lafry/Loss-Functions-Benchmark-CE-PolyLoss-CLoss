@@ -9,7 +9,7 @@ from ucimlrepo import fetch_ucirepo
 import pandas as pd
 import numpy as np
 
-def load_uci_dataset(dataset_id: int):
+def load_uci_dataset(dataset_id: int, target_column: str = None):
     """
     Scarica il dataset e lo restituisce come DataFrame Pandas,
     garantendo la rimozione preventiva dei NaN dal target per evitare crash.
@@ -31,10 +31,17 @@ def load_uci_dataset(dataset_id: int):
     if isinstance(y, pd.DataFrame) and y.shape[1] > 1:
         vals = set(y.values.ravel()) - {np.nan}
         is_binary_exclusive = vals.issubset({0, 1, 0.0, 1.0}) and (y.sum(axis=1) == 1).all()
+        
         if is_binary_exclusive:
-            y = pd.Series(y.values.argmax(axis=1), name="target")  # 7 classi per Steel Plates
+            # Steel Plates: target one-hot → argmax per ottenere le 7 classi
+            y = pd.Series(y.values.argmax(axis=1), name="target")
+        elif target_column is not None and target_column in y.columns:
+            # Colonna esplicitamente specificata nel config (es: Cannabis per Drug Consumption)
+            print(f"[*] Dataset multi-target: uso colonna '{target_column}' come specificato.")
+            y = y[target_column]
         else:
-            y = y.iloc[:, 0]  # Fallback: Drug Consumption → Alcohol
+            # Fallback generico: prima colonna
+            y = y.iloc[:, 0]
 
     # --- SALVAGUARDIA NAN TARGET ---
     # Elimina le righe dove il target è nullo prima di passare i dati al loop principale
@@ -104,11 +111,20 @@ def get_holdout_dataloaders(X, y, batch_size=64, random_state=42):
     """
     Hold-out automatico strutturato (Train, Val, Test) con scomposizione stratificata.
     """
+    # Verifica che ogni classe abbia abbastanza campioni per stratificare
+    from collections import Counter
+    counts = Counter(y)
+    min_count = min(counts.values())
+    # Con test=15%, val≈15%, train≈70% → servono almeno 7 campioni per classe
+    use_stratify = min_count >= 7
+    
     X_temp, X_test, y_temp, y_test = train_test_split(
-        X, y, test_size=0.15, random_state=random_state, stratify=y
+        X, y, test_size=0.15, random_state=random_state,
+        stratify=y if use_stratify else None
     )
     X_train, X_val, y_train, y_val = train_test_split(
-        X_temp, y_temp, test_size=0.176, random_state=random_state, stratify=y_temp
+        X_temp, y_temp, test_size=0.176, random_state=random_state,
+        stratify=y_temp if use_stratify else None
     )
 
     # --- PREPROCESSING UNIVERSALE ---
