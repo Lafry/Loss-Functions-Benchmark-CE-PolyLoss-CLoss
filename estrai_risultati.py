@@ -31,7 +31,7 @@ def estrai_riepilogo_esperimenti(base_dir="results"):
                 for loss_name, metriche in dati.items():
                     if isinstance(metriche, dict) and "acc" in metriche and "gdv" in metriche:
                         riga_kfold[f"{loss_name}_Acc_Mean"] = np.mean(metriche["acc"])
-                        riga_kfold[f"{loss_name}_Acc_Std"] = np.std(metriche["acc"])
+                        riga_kfold[f"{loss_name}_Acc_Std"]  = np.std(metriche["acc"])
                         riga_kfold[f"{loss_name}_GDV_Mean"] = np.mean(metriche["gdv"])
                 dati_kfold.append(riga_kfold)
                 

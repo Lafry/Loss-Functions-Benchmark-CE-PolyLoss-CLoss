@@ -9,7 +9,6 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, device, n
     salva i pesi migliori in base alla validation loss e ripristina il modello a fine ciclo.
     """
     history = {'train_loss': [], 'val_loss': [], 'val_acc': [], 'val_gdv': []}
-    
     best_val_loss = float('inf')
     best_model_wts = copy.deepcopy(model.state_dict())
     best_epoch = 0
@@ -19,13 +18,14 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, device, n
     hook_handle = None
     if layer_for_gdv is not None:
         def hook_fn(module, input, output):
-            attivazioni_layer.append(output.detach().cpu())
+            attivazioni_layer.append(output.detach())  # ← FIX: no .cpu(), rimane su device
         hook_handle = layer_for_gdv.register_forward_hook(hook_fn)
 
     start_time = time.time()
 
     for epoch in range(num_epochs):
-        # --- UPDATE DINAMICO C-LOSS (Soft Switching per il TRAIN) ---
+
+        # --- UPDATE DINAMICO C-LOSS ---
         if hasattr(criterion, 'gamma'):
             # L'epoca va da 0 a num_epochs-1, calcoliamo il moltiplicatore lineare
             m = epoch
@@ -44,14 +44,14 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, device, n
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
-            
+
         train_loss = running_loss / len(train_loader)
         history['train_loss'].append(train_loss)
-        
+
         # --- FASE DI VALIDATION ---
         model.eval()
         val_loss, corretti, totale = 0.0, 0, 0
-        attivazioni_layer.clear() 
+        attivazioni_layer.clear()
         tutti_targets = []
         
         # --- FIX EARLY STOPPING: Il Giudice Imparziale ---
@@ -68,12 +68,11 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, device, n
                 outputs = model(inputs)
                 loss = criterion(outputs, targets)
                 val_loss += loss.item()
-                
                 _, predicted = torch.max(outputs.data, 1)
                 totale += targets.size(0)
                 corretti += (predicted == targets).sum().item()
-                tutti_targets.append(targets.cpu())
-                
+                tutti_targets.append(targets)
+
         val_loss = val_loss / len(val_loader)
         accuracy = 100 * corretti / totale
         history['val_loss'].append(val_loss)
@@ -83,7 +82,7 @@ def train_model(model, criterion, optimizer, train_loader, val_loader, device, n
         if train_gamma is not None:
             criterion.gamma = train_gamma
 
-        # Salvataggio Modello Migliore (ora basato su una metrica fissa e coerente!)
+        # Salvataggio Modello Migliore
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_model_wts = copy.deepcopy(model.state_dict())
@@ -130,5 +129,4 @@ def evaluate_model(model, dataloader, device):
             _, predicted = torch.max(outputs.data, 1)
             totale += targets.size(0)
             corretti += (predicted == targets).sum().item()
-            
     return 100 * corretti / totale
